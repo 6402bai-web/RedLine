@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>BIOMETRIC OVERDRIVE</title>
+    <style>
+        :root {
+            --primary-red: #ff0000;
+            --dark-red: #330000;
+            --bg: #000000;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background-color: var(--bg);
+            color: var(--primary-red);
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 1. 氛围感：全屏红色脉冲光晕 */
+        #ambient-glow {
+            position: absolute;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle at center, var(--dark-red) 0%, transparent 70%);
+            opacity: 0.3;
+            z-index: 1;
+            pointer-events: none;
+            transition: transform 0.1s ease-out;
+        }
+
+        /* 2. 中间数字：极简且巨大 */
+        #main-display {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+        }
+
+        #bpm-value {
+            font-size: 220px;
+            font-weight: 900;
+            margin: 0;
+            letter-spacing: -10px;
+            /* 这种渐变让数字看起来像在发光 */
+            background: linear-gradient(to bottom, #fff 20%, var(--primary-red));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 30px rgba(255, 0, 0, 0.5));
+        }
+
+        .unit {
+            font-size: 20px;
+            letter-spacing: 15px;
+            text-transform: uppercase;
+            opacity: 0.6;
+            margin-top: -20px;
+        }
+
+        /* 3. 屏幕下方：心电图画布 */
+        #ecg-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 30vh; /* 占据屏幕下方30% */
+            z-index: 5;
+            /* 底部渐变遮罩，增加高级感 */
+            mask-image: linear-gradient(to top, black 80%, transparent);
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 扫描线装饰 */
+        .scanlines {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.3) 50%);
+            background-size: 100% 4px;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        button {
+            position: absolute;
+            top: 20px;
+            background: transparent;
+            border: 1px solid var(--primary-red);
+            color: var(--primary-red);
+            padding: 8px 20px;
+            cursor: pointer;
+            z-index: 100;
+            font-family: inherit;
+            border-radius: 4px;
+        }
+        button:hover { background: var(--primary-red); color: black; }
+
+    </style>
+</head>
+<body>
+
+    <div id="ambient-glow"></div>
+    <div class="scanlines"></div>
+
+    <button onclick="connect()">INITIALIZE LINK</button>
+
+    <div id="main-display">
+        <h1 id="bpm-value">--</h1>
+        <div class="unit">Live Pulse</div>
+    </div>
+
+    <div id="ecg-container">
+        <canvas id="ecg-canvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('ecg-canvas');
+        const ctx = canvas.getContext('2d');
+        const glow = document.getElementById('ambient-glow');
+        const bpmEl = document.getElementById('bpm-value');
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight * 0.3;
+        }
+        window.onresize = resize;
+        resize();
+
+        let x = 0;
+        let points = [];
+        let isBeating = false;
+        let currentBpm = 75;
+
+        function draw() {
+            // 实现线条余晖
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const yCenter = canvas.height / 2;
+            let y = yCenter;
+
+            // 模拟心电波形逻辑
+            if (isBeating) {
+                const interval = 1000 * (60 / currentBpm);
+                const progress = (Date.now() % interval) / interval;
+                if (progress < 0.1) {
+                    y = yCenter - (Math.sin(progress / 0.1 * Math.PI) * (canvas.height * 0.7));
+                } else if (progress < 0.15) {
+                    y = yCenter + (Math.sin((progress-0.1) / 0.05 * Math.PI) * (canvas.height * 0.2));
+                }
+            }
+
+            points.push({x, y});
+            if (points.length > 300) points.shift();
+
+            // 绘制红色发光线条
+            ctx.beginPath();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#ff0000';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#ff0000';
+            
+            for (let i = 1; i < points.length; i++) {
+                const alpha = i / points.length;
+                ctx.strokeStyle = `rgba(255, 0, 0, ${alpha})`;
+                ctx.beginPath();
+                ctx.moveTo(points[i-1].x, points[i-1].y);
+                ctx.lineTo(points[i].x, points[i].y);
+                ctx.stroke();
+            }
+
+            x += 5;
+            if (x > canvas.width) {
+                x = 0;
+                points = [];
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        async function connect() {
+            try {
+                const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService('heart_rate');
+                const char = await service.getCharacteristic('heart_rate_measurement');
+                
+                char.startNotifications();
+                document.querySelector('button').style.display = 'none';
+                requestAnimationFrame(draw);
+
+                char.addEventListener('characteristicvaluechanged', (e) => {
+                    const bpm = e.target.value.getUint8(1);
+                    currentBpm = bpm;
+                    bpmEl.innerText = bpm;
+
+                    // 联动：心跳时屏幕光晕闪动
+                    isBeating = true;
+                    glow.style.transform = 'scale(1.3)';
+                    glow.style.opacity = '0.6';
+                    setTimeout(() => { 
+                        isBeating = false; 
+                        glow.style.transform = 'scale(1)';
+                        glow.style.opacity = '0.3';
+                    }, 200);
+                });
+            } catch (err) { console.log(err); }
+        }
+    </script>
+</body>
+</html>
