@@ -2,51 +2,68 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CYBER-PULSE | FINAL MONITOR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="RED-LINE - 将心率转化为赛博朋克视觉艺术">
+    <title>CYBER-PULSE | BIOMETRIC MONITOR</title>
     <style>
         :root { 
             --neon-red: #ff0033; 
             --neon-blue: #00f2ff;
+            --neon-green: #00ff66;
+            --neon-yellow: #ffcc00;
         }
+        
+        * { box-sizing: border-box; }
+        
         body { 
             margin: 0; background: #000; color: white; 
             font-family: 'Courier New', monospace; overflow: hidden; 
             display: flex; flex-direction: column; align-items: center; height: 100vh; 
+            touch-action: manipulation;
         }
         
         #glow { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: radial-gradient(circle at center, rgba(255, 0, 51, 0.05) 0%, transparent 70%);
-            box-shadow: 0 0 100px rgba(255, 0, 51, 0.2) inset;
+            background: radial-gradient(circle at center, rgba(255, 0, 51, 0.08) 0%, transparent 70%);
+            box-shadow: 0 0 150px rgba(255, 0, 51, 0.15) inset;
             opacity: 0.5; pointer-events: none; z-index: 5; 
+            transition: opacity 0.3s;
+        }
+        
+        #glow.pulse {
+            animation: glow-pulse 1s ease-out;
+        }
+        
+        @keyframes glow-pulse {
+            0% { opacity: 1; box-shadow: 0 0 200px rgba(255, 0, 51, 0.4) inset; }
+            100% { opacity: 0.5; box-shadow: 0 0 150px rgba(255, 0, 51, 0.15) inset; }
         }
 
-        .header { margin-top: 8vh; text-align: center; z-index: 10; position: relative; }
+        .header { 
+            margin-top: 6vh; text-align: center; z-index: 10; 
+            position: relative; padding: 0 20px;
+        }
         .bpm-container { position: relative; display: inline-block; }
         
-        /* --- 数字样式控制 --- */
         #bpm { 
-            font-size: 10rem; font-weight: 900; margin: 0; 
+            font-size: clamp(5rem, 20vw, 10rem); font-weight: 900; margin: 0; 
             color: #fff; position: relative; z-index: 2;
             letter-spacing: -5px;
-            /* 默认变暗状态 */
             opacity: 0.2; 
             text-shadow: none;
-            transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+            transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
         }
 
-        /* 激活状态：高亮并开启阴影 */
         #bpm.active {
             opacity: 1;
-            text-shadow: 0 0 20px var(--neon-red);
+            text-shadow: 0 0 30px var(--neon-red), 0 0 60px rgba(255, 0, 51, 0.5);
         }
 
-        /* 激活状态下的故障效果 */
         #bpm.active::before, #bpm.active::after {
             content: attr(data-text);
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            opacity: 0.6; z-index: -1;
+            opacity: 0.7; z-index: -1;
         }
         #bpm.active::before {
             color: var(--neon-blue);
@@ -64,17 +81,64 @@
             50% { transform: translate(2px, -1px); }
             100% { transform: translate(-1px, 2px); }
         }
-
-        .meta { 
-            font-size: 0.7rem; letter-spacing: 6px; opacity: 0.5; 
-            text-transform: uppercase; margin-top: -10px;
-            color: var(--neon-blue); text-shadow: 0 0 5px var(--neon-blue);
-            transition: opacity 0.5s;
+        
+        .unit {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            color: var(--neon-red);
+            opacity: 0.6;
+            margin-left: 5px;
+            vertical-align: super;
         }
 
-        /* --- 画布区域 --- */
+        .meta { 
+            font-size: clamp(0.5rem, 2vw, 0.7rem); letter-spacing: 4px; opacity: 0.5; 
+            text-transform: uppercase; margin-top: 5px;
+            color: var(--neon-blue); text-shadow: 0 0 5px var(--neon-blue);
+            transition: all 0.3s;
+        }
+        
+        .meta.warning {
+            color: var(--neon-yellow);
+            text-shadow: 0 0 10px var(--neon-yellow);
+            animation: blink 1s infinite;
+        }
+        
+        .meta.error {
+            color: var(--neon-red);
+            text-shadow: 0 0 10px var(--neon-red);
+        }
+        
+        .meta.success {
+            color: var(--neon-green);
+            text-shadow: 0 0 10px var(--neon-green);
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .signal-indicator {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        
+        .signal-bar {
+            width: 4px;
+            height: 20px;
+            background: #333;
+            transition: all 0.3s;
+        }
+        
+        .signal-bar.active {
+            background: var(--neon-red);
+            box-shadow: 0 0 10px var(--neon-red);
+        }
+
         #container { 
-            position: relative; width: 100%; height: 35vh; margin-top: auto; 
+            position: relative; width: 100%; flex: 1; margin-top: auto; 
             border-top: 1px solid rgba(255, 0, 51, 0.1);
             background: repeating-linear-gradient(90deg, rgba(255, 0, 51, 0.02) 0px, rgba(255, 0, 51, 0.02) 1px, transparent 1px, transparent 40px);
             background-size: 40px 100%;
@@ -88,68 +152,181 @@
 
         canvas { width: 100%; height: 100%; filter: contrast(1.1) brightness(1.2); }
 
-        button { 
-            padding: 20px 60px; background: transparent; color: var(--neon-red); 
-            border: 1px solid var(--neon-red); cursor: pointer; margin-bottom: 10vh; 
-            z-index: 20; letter-spacing: 5px; font-weight: bold;
-            transition: all 0.3s;
+        .button-area {
+            padding: 20px;
+            z-index: 20;
         }
-        button:hover { background: var(--neon-red); color: #000; box-shadow: 0 0 50px var(--neon-red); }
+
+        button { 
+            padding: 15px 40px; background: transparent; color: var(--neon-red); 
+            border: 1px solid var(--neon-red); cursor: pointer;
+            font-family: 'Courier New', monospace; font-size: 1rem;
+            letter-spacing: 3px; font-weight: bold;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        button:hover, button:active { 
+            background: var(--neon-red); color: #000; 
+            box-shadow: 0 0 30px var(--neon-red);
+        }
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        #disconnectBtn {
+            display: none;
+            color: var(--neon-yellow);
+            border-color: var(--neon-yellow);
+        }
+        #disconnectBtn:hover {
+            background: var(--neon-yellow);
+        }
+
+        .error-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 0, 51, 0.9);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s;
+            text-align: center;
+            max-width: 90%;
+        }
+        
+        .error-toast.show {
+            opacity: 1;
+        }
+
+        @media (max-width: 600px) {
+            .header { margin-top: 4vh; }
+            button { padding: 12px 30px; font-size: 0.9rem; }
+            #container { height: 30vh !important; }
+        }
     </style>
 </head>
 <body>
     <div id="glow"></div>
+    
+    <div class="error-toast" id="errorToast"></div>
+    
     <div class="header">
         <div class="bpm-container">
-            <h1 id="bpm" data-text="--">--</h1>
+            <h1 id="bpm" data-text="--">--<span class="unit">BPM</span></h1>
         </div>
         <div id="status" class="meta">SYSTEM_STANDBY</div>
+        <div class="signal-indicator" id="signalIndicator">
+            <div class="signal-bar"></div>
+            <div class="signal-bar"></div>
+            <div class="signal-bar"></div>
+            <div class="signal-bar"></div>
+        </div>
     </div>
+    
     <div id="container"><canvas id="canvas"></canvas></div>
-    <button id="startBtn" onclick="initAll()">ESTABLISH LINK</button>
+    
+    <div class="button-area">
+        <button id="startBtn" onclick="initAll()">ESTABLISH LINK</button>
+        <button id="disconnectBtn" onclick="disconnect()">DISCONNECT</button>
+    </div>
 
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const bpmEl = document.getElementById('bpm');
         const statusEl = document.getElementById('status');
+        const startBtn = document.getElementById('startBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const glowEl = document.getElementById('glow');
+        const signalBars = document.querySelectorAll('.signal-bar');
+        const errorToast = document.getElementById('errorToast');
 
         let x = 0, points = [], currentBpm = 0, lastBeatTime = 0;
         let audioCtx, masterGain, flatlineOsc;
         let isConnected = false;
+        let currentDevice = null;
+        let heartRateBuffer = [];
+        const BPM_BUFFER_SIZE = 5;
+
+        function showError(message) {
+            errorToast.textContent = message;
+            errorToast.classList.add('show');
+            setTimeout(() => errorToast.classList.remove('show'), 4000);
+        }
+
+        function updateSignal(bpm) {
+            heartRateBuffer.push(bpm);
+            if (heartRateBuffer.length > BPM_BUFFER_SIZE) heartRateBuffer.shift();
+            
+            const avg = heartRateBuffer.reduce((a, b) => a + b, 0) / heartRateBuffer.length;
+            let strength = 0;
+            if (avg > 0 && avg < 250) strength = 4;
+            if (avg < 180) strength = 3;
+            if (avg < 140) strength = 2;
+            if (avg < 100) strength = 1;
+            
+            signalBars.forEach((bar, i) => {
+                bar.classList.toggle('active', i < strength);
+            });
+        }
+
+        function resetSignal() {
+            heartRateBuffer = [];
+            signalBars.forEach(bar => bar.classList.remove('active'));
+        }
 
         function initAudio() {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            masterGain = audioCtx.createGain();
-            masterGain.gain.value = 0.3;
-            masterGain.connect(audioCtx.destination);
+            if (audioCtx) return;
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = audioCtx.createGain();
+                masterGain.gain.value = 0.3;
+                masterGain.connect(audioCtx.destination);
 
-            flatlineOsc = audioCtx.createOscillator();
-            const flatlineGain = audioCtx.createGain();
-            flatlineOsc.type = 'sine';
-            flatlineOsc.frequency.setValueAtTime(880, audioCtx.currentTime);
-            flatlineGain.gain.value = 0;
-            flatlineOsc.connect(flatlineGain).connect(masterGain);
-            flatlineOsc.start();
-            window.flatlineVol = flatlineGain.gain;
+                flatlineOsc = audioCtx.createOscillator();
+                const flatlineGain = audioCtx.createGain();
+                flatlineOsc.type = 'sine';
+                flatlineOsc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                flatlineGain.gain.value = 0;
+                flatlineOsc.connect(flatlineGain).connect(masterGain);
+                flatlineOsc.start();
+                window.flatlineVol = flatlineGain.gain;
+            } catch (e) {
+                console.warn('Audio init failed:', e);
+            }
         }
 
         function playBeep() {
             if (!audioCtx || !isConnected) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
-            osc.connect(gain).connect(masterGain);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.15);
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+                osc.connect(gain).connect(masterGain);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.15);
+            } catch (e) {}
+        }
+
+        function pulseGlow() {
+            glowEl.classList.remove('pulse');
+            void glowEl.offsetWidth;
+            glowEl.classList.add('pulse');
         }
 
         function resize() {
+            const container = document.getElementById('container');
             canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight * 0.35;
+            canvas.height = container.clientHeight || window.innerHeight * 0.35;
         }
         window.onresize = resize;
         resize();
@@ -162,92 +339,5 @@
             let y = yCenter;
 
             if (isConnected && currentBpm > 0) {
-                const beatDuration = 60000 / currentBpm;
-                const elapsed = (Date.now() - lastBeatTime) % beatDuration;
-                const p = elapsed / beatDuration;
-
-                if (p < 0.1) {
-                    y = yCenter - Math.sin(p / 0.1 * Math.PI) * 8;
-                } else if (p > 0.12 && p < 0.22) {
-                    const qrsP = (p - 0.12) / 0.1;
-                    y = yCenter - Math.pow(Math.sin(qrsP * Math.PI), 6) * (canvas.height * 0.85);
-                } else if (p > 0.3 && p < 0.5) {
-                    y = yCenter - Math.sin((p - 0.3) / 0.2 * Math.PI) * 15;
-                }
-            } else {
-                y = yCenter + (Math.random() - 0.5) * 3;
-            }
-
-            points.push({x, y});
-            if (points.length > canvas.width / 4) points.shift();
-
-            ctx.lineJoin = 'round';
-            ctx.lineCap = 'round';
-
-            ctx.beginPath();
-            ctx.lineWidth = 6;
-            ctx.strokeStyle = isConnected ? 'rgba(255, 0, 51, 0.2)' : 'transparent';
-            drawCurve();
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.lineWidth = 2.5;
-            ctx.strokeStyle = isConnected ? '#fff' : '#333'; 
-            drawCurve();
-            ctx.stroke();
-
-            x += 4.5;
-            if (x > canvas.width) { x = 0; points = []; }
-            requestAnimationFrame(draw);
-        }
-
-        function drawCurve() {
-            if (points.length < 2) return;
-            ctx.moveTo(points[0].x, points[0].y);
-            for (let i = 1; i < points.length - 2; i++) {
-                const xc = (points[i].x + points[i + 1].x) / 2;
-                const yc = (points[i].y + points[i + 1].y) / 2;
-                ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
-            }
-        }
-
-        async function initAll() {
-            initAudio();
-            draw();
-            try {
-                const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
-                device.addEventListener('gattserverdisconnected', () => {
-                    isConnected = false;
-                    bpmEl.classList.remove('active'); // 断开时移除高亮类
-                    window.flatlineVol.setTargetAtTime(0.4, audioCtx.currentTime, 0.1);
-                    statusEl.innerText = "SIGNAL_LOST: REBOOTING...";
-                });
-
-                const server = await device.gatt.connect();
-                const service = await server.getPrimaryService('heart_rate');
-                const char = await service.getCharacteristic('heart_rate_measurement');
-                await char.startNotifications();
-                
-                isConnected = true;
-                bpmEl.classList.add('active'); // 连接成功开启高亮
-                window.flatlineVol.setTargetAtTime(0, audioCtx.currentTime, 0.1);
-                document.getElementById('startBtn').style.display = 'none';
-                statusEl.innerText = "SYSTEM_READY: MONITORING";
-
-                char.addEventListener('characteristicvaluechanged', (e) => {
-                    const bpm = e.target.value.getUint8(1);
-                    currentBpm = bpm;
-                    bpmEl.innerText = bpm;
-                    bpmEl.setAttribute('data-text', bpm);
-                    lastBeatTime = Date.now();
-                    playBeep();
-                });
-            } catch (err) { 
-                isConnected = false;
-                bpmEl.classList.remove('active');
-                window.flatlineVol.setTargetAtTime(0.4, audioCtx.currentTime, 0.1);
-            }
-        }
-    </script>
-</body>
-</html>
+                const beatDuration = 60000 / current
+...(truncated)...
