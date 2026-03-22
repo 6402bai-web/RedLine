@@ -1,19 +1,45 @@
 # 🔴 RED-LINE | Biometric Overdrive
 
-> **生命不仅是数字，更是跳动的红线。**
+[![License: MIT](https://img.shields.io/badge/License-MIT-red.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Web_Bluetooth-00d4ff)](https://developer.mozilla.org/en-US/docs/Web/API/Bluetooth)
 
-## 📖 项目简介
-RED-LINE 是一个将人体实时心率转化为极具冲击力的“赛博朋克”视觉艺术的项目。
-它通过 Web Bluetooth API 接入智能设备，将生物体征数据实时渲染为动态的心电线条与全屏光晕脉冲。
+> 生命不仅是数字，更是跳动的红线。
 
-## ✨ 核心特性
-- **实时心电感应**: 毫秒级捕捉心率波动。
-- **氛围渲染**: 全屏红色光晕随心跳同步脉冲。
-- **视觉冲击**: 巨大的数值显示与底部流线型心电图。
+## 项目简介
 
-## 🛠️ 如何使用
-1. 确保你的智能手表/心率带已开启“心率广播”模式。
-2. 使用 Chrome 或 Edge 浏览器打开本项目链接。
-3. 点击 [INITIALIZE LINK] 并授权蓝牙连接。
+RED-LINE 将人体实时心率转化为赛博朋克视觉艺术。通过 Web Bluetooth API 连接智能心率设备，实时渲染为：
+- 巨大的心率数值（带故障效果）
+- 底部流线型心电图  
+- 全屏红色光晕脉冲
 
-# RedLine
+## 特性
+
+- ⚡ 毫秒级响应
+- 🔊 心跳音效提示
+- 🎨 霓虹故障效果
+- 📱 移动端适配
+
+## 使用方法
+
+1. 智能手表/心率带开启"心率广播"
+2. 使用 Chrome/Edge 打开 index.html
+3. 点击 ESTABLISH LINK 连接设备
+
+## 浏览器支持
+
+- Chrome ✅
+- Edge ✅
+- Opera ✅
+- Safari ❌ (不支持 Web Bluetooth)
+- iOS Safari ❌
+
+## 技术栈
+
+- HTML5 + CSS3
+- Canvas API (心电图)
+- Web Bluetooth API
+- Web Audio API
+
+## License
+
+MIT License
