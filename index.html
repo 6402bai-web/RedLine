@@ -2,235 +2,252 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#000000">
-    <meta name="description" content="RED-LINE - 将心率转化为赛博朋克视觉艺术">
-    <title>CYBER-PULSE | BIOMETRIC MONITOR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBER-PULSE | FINAL MONITOR</title>
     <style>
         :root { 
             --neon-red: #ff0033; 
             --neon-blue: #00f2ff;
-            --neon-green: #00ff66;
-            --neon-yellow: #ffcc00;
         }
-
-        * { box-sizing: border-box; }
-
         body { 
             margin: 0; background: #000; color: white; 
             font-family: 'Courier New', monospace; overflow: hidden; 
             display: flex; flex-direction: column; align-items: center; height: 100vh; 
-            touch-action: manipulation;
         }
-
+        
         #glow { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: radial-gradient(circle at center, rgba(255, 0, 51, 0.08) 0%, transparent 70%);
-            box-shadow: 0 0 150px rgba(255, 0, 51, 0.15) inset;
+            background: radial-gradient(circle at center, rgba(255, 0, 51, 0.05) 0%, transparent 70%);
+            box-shadow: 0 0 100px rgba(255, 0, 51, 0.2) inset;
             opacity: 0.5; pointer-events: none; z-index: 5; 
-            transition: opacity 0.3s;
         }
 
-        .header { 
-            margin-top: 6vh; text-align: center; z-index: 10; 
-            position: relative; padding: 0 20px;
-        }
-
+        .header { margin-top: 8vh; text-align: center; z-index: 10; position: relative; }
+        .bpm-container { position: relative; display: inline-block; }
+        
+        /* --- 数字样式控制 --- */
         #bpm { 
-            font-size: clamp(5rem, 20vw, 10rem); font-weight: 900; margin: 0; 
-            color: #fff; opacity: 0.2; 
+            font-size: 10rem; font-weight: 900; margin: 0; 
+            color: #fff; position: relative; z-index: 2;
             letter-spacing: -5px;
-            transition: all 0.3s;
+            /* 默认变暗状态 */
+            opacity: 0.2; 
+            text-shadow: none;
+            transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
         }
 
+        /* 激活状态：高亮并开启阴影 */
         #bpm.active {
             opacity: 1;
-            text-shadow: 0 0 30px var(--neon-red);
-            animation: pulse-text 0.2s ease-out;
+            text-shadow: 0 0 20px var(--neon-red);
         }
 
-        @keyframes pulse-text {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+        /* 激活状态下的故障效果 */
+        #bpm.active::before, #bpm.active::after {
+            content: attr(data-text);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0.6; z-index: -1;
+        }
+        #bpm.active::before {
+            color: var(--neon-blue);
+            animation: glitch-offset 2s infinite linear alternate-reverse;
+            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+        }
+        #bpm.active::after {
+            color: var(--neon-red);
+            animation: glitch-offset 1.5s infinite linear alternate;
+            clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
         }
 
-        .unit { font-size: 1.5rem; color: var(--neon-red); margin-left: 5px; }
+        @keyframes glitch-offset {
+            0% { transform: translate(-2px, 1px); }
+            50% { transform: translate(2px, -1px); }
+            100% { transform: translate(-1px, 2px); }
+        }
 
         .meta { 
-            font-size: 0.7rem; letter-spacing: 4px; opacity: 0.5; 
-            color: var(--neon-blue); margin-top: 5px;
+            font-size: 0.7rem; letter-spacing: 6px; opacity: 0.5; 
+            text-transform: uppercase; margin-top: -10px;
+            color: var(--neon-blue); text-shadow: 0 0 5px var(--neon-blue);
+            transition: opacity 0.5s;
         }
 
+        /* --- 画布区域 --- */
         #container { 
-            position: relative; width: 100%; flex: 1; 
-            background: repeating-linear-gradient(90deg, rgba(255, 0, 51, 0.03) 0, rgba(255, 0, 51, 0.03) 1px, transparent 1px, transparent 40px);
+            position: relative; width: 100%; height: 35vh; margin-top: auto; 
+            border-top: 1px solid rgba(255, 0, 51, 0.1);
+            background: repeating-linear-gradient(90deg, rgba(255, 0, 51, 0.02) 0px, rgba(255, 0, 51, 0.02) 1px, transparent 1px, transparent 40px);
+            background-size: 40px 100%;
+        }
+        
+        #container::after {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px; pointer-events: none;
         }
 
-        canvas { width: 100%; height: 100%; display: block; }
-
-        .button-area { padding: 40px; z-index: 20; }
+        canvas { width: 100%; height: 100%; filter: contrast(1.1) brightness(1.2); }
 
         button { 
-            padding: 15px 40px; background: transparent; color: var(--neon-red); 
-            border: 1px solid var(--neon-red); cursor: pointer;
-            letter-spacing: 3px; font-weight: bold; transition: all 0.3s;
+            padding: 20px 60px; background: transparent; color: var(--neon-red); 
+            border: 1px solid var(--neon-red); cursor: pointer; margin-bottom: 10vh; 
+            z-index: 20; letter-spacing: 5px; font-weight: bold;
+            transition: all 0.3s;
         }
-
-        button:hover { background: var(--neon-red); color: #000; box-shadow: 0 0 20px var(--neon-red); }
-
-        .error-toast {
-            position: fixed; top: 20px; background: var(--neon-red); color: #fff;
-            padding: 10px 20px; display: none; z-index: 100;
-        }
+        button:hover { background: var(--neon-red); color: #000; box-shadow: 0 0 50px var(--neon-red); }
     </style>
 </head>
 <body>
     <div id="glow"></div>
-    <div class="error-toast" id="errorToast"></div>
-
     <div class="header">
-        <h1 id="bpm" data-text="--">--<span class="unit">BPM</span></h1>
-        <div id="status" class="meta">SYSTEM_OFFLINE</div>
+        <div class="bpm-container">
+            <h1 id="bpm" data-text="--">--</h1>
+        </div>
+        <div id="status" class="meta">SYSTEM_STANDBY</div>
     </div>
-
     <div id="container"><canvas id="canvas"></canvas></div>
-
-    <div class="button-area">
-        <button id="startBtn" onclick="initAll()">ESTABLISH LINK</button>
-    </div>
+    <button id="startBtn" onclick="initAll()">ESTABLISH LINK</button>
 
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const bpmEl = document.getElementById('bpm');
         const statusEl = document.getElementById('status');
-        const errorToast = document.getElementById('errorToast');
 
-        let audioCtx, masterGain;
-        let points = [];
-        let currentBpm = 0;
-        let x = 0;
-
-        // 初始化 Canvas 尺寸
-        function resize() {
-            canvas.width = window.innerWidth * window.devicePixelRatio;
-            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-        }
-        window.addEventListener('resize', resize);
-        resize();
-
-        function showError(msg) {
-            errorToast.innerText = msg;
-            errorToast.style.display = 'block';
-            setTimeout(() => errorToast.style.display = 'none', 3000);
-        }
+        let x = 0, points = [], currentBpm = 0, lastBeatTime = 0;
+        let audioCtx, masterGain, flatlineOsc;
+        let isConnected = false;
 
         function initAudio() {
-            if (audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             masterGain = audioCtx.createGain();
-            masterGain.gain.value = 0.2;
+            masterGain.gain.value = 0.3;
             masterGain.connect(audioCtx.destination);
+
+            flatlineOsc = audioCtx.createOscillator();
+            const flatlineGain = audioCtx.createGain();
+            flatlineOsc.type = 'sine';
+            flatlineOsc.frequency.setValueAtTime(880, audioCtx.currentTime);
+            flatlineGain.gain.value = 0;
+            flatlineOsc.connect(flatlineGain).connect(masterGain);
+            flatlineOsc.start();
+            window.flatlineVol = flatlineGain.gain;
         }
 
         function playBeep() {
-            if (!audioCtx) return;
+            if (!audioCtx || !isConnected) return;
             const osc = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
+            const gain = audioCtx.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-            g.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
-            osc.connect(g);
-            g.connect(masterGain);
+            osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+            osc.connect(gain).connect(masterGain);
             osc.start();
-            osc.stop(audioCtx.currentTime + 0.1);
+            osc.stop(audioCtx.currentTime + 0.15);
+        }
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight * 0.35;
+        }
+        window.onresize = resize;
+        resize();
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.12)'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const yCenter = canvas.height / 2;
+            let y = yCenter;
+
+            if (isConnected && currentBpm > 0) {
+                const beatDuration = 60000 / currentBpm;
+                const elapsed = (Date.now() - lastBeatTime) % beatDuration;
+                const p = elapsed / beatDuration;
+
+                if (p < 0.1) {
+                    y = yCenter - Math.sin(p / 0.1 * Math.PI) * 8;
+                } else if (p > 0.12 && p < 0.22) {
+                    const qrsP = (p - 0.12) / 0.1;
+                    y = yCenter - Math.pow(Math.sin(qrsP * Math.PI), 6) * (canvas.height * 0.85);
+                } else if (p > 0.3 && p < 0.5) {
+                    y = yCenter - Math.sin((p - 0.3) / 0.2 * Math.PI) * 15;
+                }
+            } else {
+                y = yCenter + (Math.random() - 0.5) * 3;
+            }
+
+            points.push({x, y});
+            if (points.length > canvas.width / 4) points.shift();
+
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+
+            ctx.beginPath();
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = isConnected ? 'rgba(255, 0, 51, 0.2)' : 'transparent';
+            drawCurve();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = isConnected ? '#fff' : '#333'; 
+            drawCurve();
+            ctx.stroke();
+
+            x += 4.5;
+            if (x > canvas.width) { x = 0; points = []; }
+            requestAnimationFrame(draw);
+        }
+
+        function drawCurve() {
+            if (points.length < 2) return;
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length - 2; i++) {
+                const xc = (points[i].x + points[i + 1].x) / 2;
+                const yc = (points[i].y + points[i + 1].y) / 2;
+                ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+            }
         }
 
         async function initAll() {
+            initAudio();
+            draw();
             try {
-                initAudio();
-                if (audioCtx.state === 'suspended') await audioCtx.resume();
-
-                statusEl.textContent = "SEARCHING_FOR_DEVICE...";
-                
-                const device = await navigator.bluetooth.requestDevice({
-                    filters: [{ services: ['heart_rate'] }]
+                const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
+                device.addEventListener('gattserverdisconnected', () => {
+                    isConnected = false;
+                    bpmEl.classList.remove('active'); // 断开时移除高亮类
+                    window.flatlineVol.setTargetAtTime(0.4, audioCtx.currentTime, 0.1);
+                    statusEl.innerText = "SIGNAL_LOST: REBOOTING...";
                 });
 
                 const server = await device.gatt.connect();
                 const service = await server.getPrimaryService('heart_rate');
                 const char = await service.getCharacteristic('heart_rate_measurement');
-
                 await char.startNotifications();
-                statusEl.textContent = "LINK_ACTIVE";
+                
+                isConnected = true;
+                bpmEl.classList.add('active'); // 连接成功开启高亮
+                window.flatlineVol.setTargetAtTime(0, audioCtx.currentTime, 0.1);
                 document.getElementById('startBtn').style.display = 'none';
+                statusEl.innerText = "SYSTEM_READY: MONITORING";
 
                 char.addEventListener('characteristicvaluechanged', (e) => {
-                    const value = e.target.value;
-                    const bpm = value.getUint8(1);
-                    updateBPM(bpm);
+                    const bpm = e.target.value.getUint8(1);
+                    currentBpm = bpm;
+                    bpmEl.innerText = bpm;
+                    bpmEl.setAttribute('data-text', bpm);
+                    lastBeatTime = Date.now();
+                    playBeep();
                 });
-
-            } catch (err) {
-                showError("LINK_FAILED: " + err.message);
-                statusEl.textContent = "SYSTEM_ERROR";
+            } catch (err) { 
+                isConnected = false;
+                bpmEl.classList.remove('active');
+                window.flatlineVol.setTargetAtTime(0.4, audioCtx.currentTime, 0.1);
             }
         }
-
-        function updateBPM(bpm) {
-            currentBpm = bpm;
-            bpmEl.textContent = bpm;
-            bpmEl.classList.add('active');
-            playBeep();
-            setTimeout(() => bpmEl.classList.remove('active'), 200);
-        }
-
-        function draw() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.strokeStyle = '#ff0033';
-            ctx.lineWidth = 3;
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = '#ff0033';
-
-            ctx.beginPath();
-            ctx.moveTo(0, canvas.height / 2);
-
-            // 模拟心电图波形
-            const speed = 4;
-            const centerY = canvas.height / 2;
-            let targetY = centerY;
-
-            // 简单的 QRS 波群模拟逻辑
-            if (currentBpm > 0) {
-                const period = (60 / currentBpm) * 60; // 帧周期
-                const phase = x % period;
-                
-                if (phase > 0 && phase < 10) targetY -= phase * 5; // P波
-                if (phase >= 10 && phase < 15) targetY += (phase-10) * 20; // QR
-                if (phase >= 15 && phase < 20) targetY -= (phase-15) * 40; // RS
-                if (phase >= 20 && phase < 30) targetY = centerY + (30-phase) * 5; // T波
-            }
-
-            points.push({x: canvas.width, y: targetY});
-            
-            for(let i = 0; i < points.length; i++) {
-                points[i].x -= speed;
-                if (i === 0) ctx.moveTo(points[i].x, points[i].y);
-                else ctx.lineTo(points[i].x, points[i].y);
-            }
-
-            if (points.length > 500) points.shift();
-            
-            ctx.stroke();
-            x++;
-            requestAnimationFrame(draw);
-        }
-
-        draw();
     </script>
 </body>
 </html>
